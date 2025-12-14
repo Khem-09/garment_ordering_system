@@ -1,0 +1,291 @@
+@import url('base.css');
+
+:root {
+    --primary-red: #8B0000;
+    --secondary-red: #A52A2A;
+    --dark-gray: #333;
+    --light-gray: #f4f4f4;
+    --white: #fff;
+    --text-color: #333;
+    --danger-light: #f8d7da;
+    --danger: #f5c6cb;
+    --danger-dark: #721c24;
+    --success-light: #d4edda;
+    --success: #c3e6cb;
+    --success-dark: #155724;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--light-gray);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- ORIGINAL HEADER STYLE RESTORED --- */
+.header {
+    background-color: var(--primary-red);
+    color: var(--white);
+    padding: 15px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.header .logo-section {
+    display: flex;
+    align-items: center;
+}
+
+.header .logo {
+    height: 40px;
+    margin-right: 10px;
+    border-radius: 20px;
+}
+
+.header .system-name {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.header .nav {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.header .nav li {
+    margin-left: 25px;
+}
+
+.header .nav a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.header .nav a:hover {
+    color: #ccc;
+}
+
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('../images/WMSU_bg.jpg') no-repeat center center/cover;
+}
+
+.signup-container {
+    background-color: var(--white);
+    padding: 40px 50px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 550px; 
+    text-align: center;
+    animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.signup-container h2 {
+    margin-bottom: 30px;
+    color: var(--primary-red);
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/* Steps Title */
+.form-title {
+    text-align: left;
+    font-size: 1.2rem;
+    color: var(--primary-red);
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--dark-gray);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#college{
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: var(--white);
+    font-size: 16px;
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* Styled Select Dropdown */
+select.form-control-styled {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: var(--white);
+    font-size: 16px;
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+select.form-control-styled:focus {
+    border-color: var(--primary-red);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.15); 
+}
+
+/* Password Toggle Wrapper */
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-wrapper input {
+    padding-right: 45px;
+}
+
+.input-wrapper i.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.btn-signup {
+    background-color: var(--primary-red);
+    color: var(--white);
+    padding: 15px 30px;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.btn-signup:hover {
+    background-color: var(--secondary-red);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.login-link {
+    margin-top: 25px;
+    font-size: 15px;
+    color: var(--dark-gray);
+}
+
+.login-link a {
+    color: var(--primary-red);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+.message {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.message-error {
+    background-color: var(--danger-light);
+    border-color: var(--danger);
+    color: var(--danger-dark);
+}
+
+.message-success {
+    background-color: var(--success-light);
+    border-color: var(--success);
+    color: var(--success-dark);
+}
+
+.error-text {
+    color: var(--danger-dark);
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+}
+
+footer {
+    background-color: var(--dark-gray);
+    color: var(--white);
+    text-align: center;
+    padding: 20px 0;
+    margin-top: auto;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .header .nav {
+        margin-top: 15px;
+        justify-content: center;
+    }
+    .header .nav li {
+        margin: 0 15px;
+    }
+    .signup-container {
+        padding: 30px;
+        margin: 20px;
+        max-width: unset; 
+    }
+}
