@@ -2,18 +2,14 @@
 require_once __DIR__ . '/../config.php';
 
 class Database {
-    protected $host;
-    protected $username;
-    protected $password;
-    protected $dbname;
+     protected $host = "127.0.0.1";
+    protected $username = "root";    
+    protected $password = "";        
+    protected $dbname = "garment_ordering_system";
     
     public $conn; 
 
     public function __construct($existing_conn = null) {
-        $this->host = "localhost";
-        $this->username = "u194078580_garment";
-        $this->password = "Garment123...";
-        $this->dbname = "u194078580_garment";
         if ($existing_conn) {
             $this->conn = $existing_conn;
             return;

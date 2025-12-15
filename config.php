@@ -1,8 +1,8 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_USER', 'u194078580_garment');
-define('DB_PASS', 'Garment123...');
-define('DB_NAME', 'u194078580_garment');
+define('DB_HOST', '127.0.0.1');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_NAME', 'garment_ordering_system');
 
 define('GO_LIVE_DATE', '2025-10-28');
 
