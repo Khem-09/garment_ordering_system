@@ -91,7 +91,7 @@ if ($action === 'submit_order') {
 
         $db->conn->beginTransaction();
 
-        $sql_order = "INSERT INTO Orders (user_id, order_date, total_amount) 
+        $sql_order = "INSERT INTO orders (user_id, order_date, total_amount) 
                         VALUES (:user_id, :order_date, :total_amount)";
         $params_order = [
             ':user_id' => $user_id,
@@ -101,7 +101,7 @@ if ($action === 'submit_order') {
         $db->execute($sql_order, $params_order);
         $order_id = $db->lastInsertId(); 
 
-        $sql_item = "INSERT INTO Order_Items 
+        $sql_item = "INSERT INTO order_items 
                        (order_id, stock_id, size, unit_price, quantity, subtotal) 
                        VALUES (:order_id, :stock_id, :size, :unit_price, :quantity, :subtotal)";
 

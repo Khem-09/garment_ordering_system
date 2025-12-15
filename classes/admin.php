@@ -19,7 +19,7 @@
         // --- ACCOUNT MANAGEMENT METHODS ---
         
         public function getProfile($user_id) {
-            $sql = "SELECT user_id, student_id, first_name, last_name, email_address, contact_number FROM Users WHERE user_id = :user_id LIMIT 1";
+            $sql = "SELECT user_id, student_id, first_name, last_name, email_address, contact_number FROM users WHERE user_id = :user_id LIMIT 1";
             $result = $this->select($sql, [':user_id' => $user_id]);
             
             if ($result) {
@@ -31,7 +31,7 @@
         }
 
         public function updateProfile($user_id, $first_name, $last_name, $contact_number) {
-            $sql = "UPDATE Users SET first_name = :first_name, last_name = :last_name, contact_number = :contact_number WHERE user_id = :user_id";
+            $sql = "UPDATE users SET first_name = :first_name, last_name = :last_name, contact_number = :contact_number WHERE user_id = :user_id";
             $params = [
                 ':first_name' => $first_name,
                 ':last_name' => $last_name,
@@ -42,7 +42,7 @@
         }
 
         public function verifyCurrentPassword($user_id, $password) {
-            $sql = "SELECT password_hash FROM Users WHERE user_id = :user_id LIMIT 1";
+            $sql = "SELECT password_hash FROM users WHERE user_id = :user_id LIMIT 1";
             $result = $this->select($sql, [':user_id' => $user_id]);
             if ($result) {
                 return password_verify($password, $result[0]['password_hash']);
@@ -51,7 +51,7 @@
         }
 
         public function requestPasswordChangeOTP($user_id) {
-            $sql_user = "SELECT email_address, first_name FROM Users WHERE user_id = :user_id LIMIT 1";
+            $sql_user = "SELECT email_address, first_name FROM users WHERE user_id = :user_id LIMIT 1";
             $user = $this->select($sql_user, [':user_id' => $user_id]);
             
             if (empty($user)) return false;
@@ -62,7 +62,7 @@
             $otp_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
             $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-            $sql_update = "UPDATE Users SET reset_token = :otp, reset_token_expiry = :expiry WHERE user_id = :user_id";
+            $sql_update = "UPDATE users SET reset_token = :otp, reset_token_expiry = :expiry WHERE user_id = :user_id";
             $this->execute($sql_update, [
                 ':otp' => $otp_code,
                 ':expiry' => $expiry,
@@ -91,7 +91,7 @@
         public function verifyOTPAndChangePassword($user_id, $code, $new_password) {
             $current_time_php = date('Y-m-d H:i:s');
 
-            $sql = "SELECT user_id FROM Users WHERE user_id = :user_id AND reset_token = :otp AND reset_token_expiry > :current_time LIMIT 1";
+            $sql = "SELECT user_id FROM users WHERE user_id = :user_id AND reset_token = :otp AND reset_token_expiry > :current_time LIMIT 1";
             $result = $this->select($sql, [
                 ':user_id' => $user_id, 
                 ':otp' => $code,
@@ -103,7 +103,7 @@
             }
 
             $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-            $sql_update = "UPDATE Users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :user_id";
+            $sql_update = "UPDATE users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :user_id";
             $this->execute($sql_update, [
                 ':hash' => $new_hash,
                 ':user_id' => $user_id
@@ -117,13 +117,13 @@
         // -------------------------------------
 
         public function getGarmentDetails($garment_id) {
-            $sql = "SELECT garment_id, item_name, category, unit_price, image_url, is_deleted FROM Garment WHERE garment_id = :garment_id LIMIT 1";
+            $sql = "SELECT garment_id, item_name, category, unit_price, image_url, is_deleted FROM garment WHERE garment_id = :garment_id LIMIT 1";
             $result = $this->select($sql, [':garment_id' => $garment_id]);
             return $result ? $result[0] : null;
         }
 
        public function addGarments(){
-            $checkSql = "SELECT garment_id, is_deleted FROM Garment WHERE item_name = :item_name LIMIT 1";
+            $checkSql = "SELECT garment_id, is_deleted FROM garment WHERE item_name = :item_name LIMIT 1";
             $existing = $this->select($checkSql, [':item_name' => $this->item_name]);
             
             if (!empty($existing)) {
@@ -131,7 +131,7 @@
                 if ($row['is_deleted'] == 0) {
                     return "DUPLICATE";
                 } else {
-                    $updateSql = "UPDATE Garment 
+                    $updateSql = "UPDATE garment 
                                   SET category = :category, 
                                       unit_price = :unit_price, 
                                       is_deleted = 0 
@@ -144,7 +144,7 @@
                     ];
 
                     if (!empty($this->image_url)) {
-                        $updateSql = "UPDATE Garment 
+                        $updateSql = "UPDATE garment 
                                       SET category = :category, 
                                           unit_price = :unit_price, 
                                           image_url = :image_url,
@@ -160,7 +160,7 @@
                 }
             }
 
-            $sql = "INSERT INTO Garment (item_name, category, unit_price, image_url)
+            $sql = "INSERT INTO garment (item_name, category, unit_price, image_url)
                     VALUES (:item_name, :category, :unit_price, :image_url)";
             $params = [
                 ':item_name' => $this->item_name,
@@ -220,7 +220,7 @@
                     return true; 
                 }
 
-                $sql = "UPDATE Garment SET " . implode(", ", $sql_parts) . " WHERE garment_id = :garment_id";
+                $sql = "UPDATE garment SET " . implode(", ", $sql_parts) . " WHERE garment_id = :garment_id";
 
                 if ($this->execute($sql, $params)) {
                     if ($new_image_url !== null && !empty($old_image_url) && $old_image_url != $new_image_url) {
@@ -253,7 +253,7 @@
             $where_sql = " WHERE " . implode(" AND ", $conditions);
 
             // 1. Get Total Count
-            $count_sql = "SELECT COUNT(DISTINCT g.garment_id) as total FROM Garment g LEFT JOIN Stocks s ON g.garment_id = s.garment_id " . $where_sql;
+            $count_sql = "SELECT COUNT(DISTINCT g.garment_id) as total FROM garment g LEFT JOIN stocks s ON g.garment_id = s.garment_id " . $where_sql;
             $count_res = $this->select($count_sql, $params);
             $total_records = $count_res[0]['total'] ?? 0;
 
@@ -261,8 +261,8 @@
             $sql = "SELECT g.garment_id, g.item_name, g.category, g.unit_price, g.image_url,
                            SUM(s.current_stock) AS total_stock,
                            GROUP_CONCAT(CONCAT(s.size, ': ', s.current_stock) ORDER BY FIELD(s.size, 'Extra Small', 'Small', 'Medium', 'Large', 'Extra Large') SEPARATOR '<br>') AS stock_breakdown
-                    FROM Garment g
-                    LEFT JOIN Stocks s ON g.garment_id = s.garment_id
+                    FROM garment g
+                    LEFT JOIN stocks s ON g.garment_id = s.garment_id
                     $where_sql
                     GROUP BY g.garment_id, g.item_name, g.category, g.unit_price, g.image_url
                     ORDER BY g.item_name ASC
@@ -278,13 +278,13 @@
         }
 
         public function getAllGarments() {
-            $sql = "SELECT garment_id, item_name, category, unit_price FROM Garment WHERE is_deleted = 0 ORDER BY item_name ASC";
+            $sql = "SELECT garment_id, item_name, category, unit_price FROM garment WHERE is_deleted = 0 ORDER BY item_name ASC";
             $result = $this->conn->query($sql);
             return $result ? $result->fetchAll(PDO::FETCH_ASSOC) : [];
         }
 
         public function getGarmentsByName($search_query) {
-            $sql = "SELECT garment_id, item_name, category, unit_price FROM Garment 
+            $sql = "SELECT garment_id, item_name, category, unit_price FROM garment 
                     WHERE item_name LIKE :search_query 
                     AND is_deleted = 0 
                     ORDER BY item_name ASC";
@@ -293,31 +293,31 @@
         }
 
         public function getStocks($garment_id) {
-            $sql = "SELECT stock_id, garment_id, size, current_stock FROM Stocks WHERE garment_id = :garment_id ORDER BY FIELD(size, 'Extra Small', 'Small', 'Medium', 'Large', 'Extra Large')";
+            $sql = "SELECT stock_id, garment_id, size, current_stock FROM stocks WHERE garment_id = :garment_id ORDER BY FIELD(size, 'Extra Small', 'Small', 'Medium', 'Large', 'Extra Large')";
             return $this->select($sql, [':garment_id' => $garment_id]);
         }
         
         private function getCurrentStockLevel($stock_id) {
-            $result = $this->select("SELECT current_stock FROM Stocks WHERE stock_id = :stock_id LIMIT 1", [':stock_id' => $stock_id]);
+            $result = $this->select("SELECT current_stock FROM stocks WHERE stock_id = :stock_id LIMIT 1", [':stock_id' => $stock_id]);
             return $result ? (int)$result[0]['current_stock'] : null;
         }
 
        public function addStocks($garment_id, $size, $initial_stock) {
-            $checkSql = "SELECT stock_id, current_stock FROM Stocks WHERE garment_id = :garment_id AND size = :size LIMIT 1";
+            $checkSql = "SELECT stock_id, current_stock FROM stocks WHERE garment_id = :garment_id AND size = :size LIMIT 1";
             $existing = $this->select($checkSql, [':garment_id' => $garment_id, ':size' => $size]);
 
             if (!empty($existing)) {
                 $stock_id = $existing[0]['stock_id'];
                 $new_total = $existing[0]['current_stock'] + $initial_stock;
                 
-                $sql = "UPDATE Stocks SET current_stock = :current_stock WHERE stock_id = :stock_id";
+                $sql = "UPDATE stocks SET current_stock = :current_stock WHERE stock_id = :stock_id";
                 $this->execute($sql, [':current_stock' => $new_total, ':stock_id' => $stock_id]);
                 
                 $admin_user_id = $_SESSION['user']['user_id'] ?? null;
                 $this->addStockMovementLog($stock_id, $initial_stock, $new_total, 'restock', $admin_user_id, null, "Admin added stock to existing size.");
                 return true;
             } else {
-                $sql = "INSERT INTO Stocks (garment_id, size, current_stock) VALUES (:garment_id, :size, :current_stock)";
+                $sql = "INSERT INTO stocks (garment_id, size, current_stock) VALUES (:garment_id, :size, :current_stock)";
                 $params = [':garment_id' => $garment_id, ':size' => $size, ':current_stock' => $initial_stock];
                 $stmt = $this->execute($sql, $params);
                 if ($stmt && $stmt->rowCount() > 0) {
@@ -337,7 +337,7 @@
                 return false; 
             }
 
-            $sql = "UPDATE Stocks SET current_stock = :current_stock WHERE stock_id = :stock_id";
+            $sql = "UPDATE stocks SET current_stock = :current_stock WHERE stock_id = :stock_id";
             $params = [':current_stock' => $new_stock_level, ':stock_id' => $stock_id];
             $stmt = $this->execute($sql, $params);
             
@@ -359,7 +359,7 @@
 
             try {
                 // Attempt Hard Delete
-                $sql = "DELETE FROM Stocks WHERE stock_id = :stock_id";
+                $sql = "DELETE FROM stocks WHERE stock_id = :stock_id";
                 $this->execute($sql, [':stock_id' => $stock_id]);
                 
                 // If successful (no orders linked), log deletion
@@ -373,7 +373,7 @@
                 if (strpos($e->getMessage(), 'Constraint violation') !== false || strpos($e->getMessage(), '1451') !== false) {
                     
                     // Fallback: Soft Delete by setting stock to 0
-                    $updateSql = "UPDATE Stocks SET current_stock = 0 WHERE stock_id = :stock_id";
+                    $updateSql = "UPDATE stocks SET current_stock = 0 WHERE stock_id = :stock_id";
                     $this->execute($updateSql, [':stock_id' => $stock_id]);
 
                     if ($old_stock_level !== null && $old_stock_level > 0) {
@@ -393,7 +393,7 @@
                 }
                 $image_url = $garment_details['image_url'];
 
-                $sql = "UPDATE Garment SET is_deleted = 1 WHERE garment_id = :garment_id";
+                $sql = "UPDATE garment SET is_deleted = 1 WHERE garment_id = :garment_id";
                 $stmt = $this->execute($sql, [':garment_id' => $garment_id]);
                 
                 if ($stmt->rowCount() > 0) {
@@ -421,7 +421,7 @@
             $where_sql = " WHERE " . implode(" AND ", $conditions);
 
             // 1. Get Total Count
-            $count_sql = "SELECT COUNT(*) as total FROM Orders o JOIN users u ON o.user_id = u.user_id " . $where_sql;
+            $count_sql = "SELECT COUNT(*) as total FROM orders o JOIN users u ON o.user_id = u.user_id " . $where_sql;
             $count_res = $this->select($count_sql, $params);
             $total_records = $count_res[0]['total'] ?? 0;
 
@@ -434,7 +434,7 @@
                     o.status,
                     u.full_name,
                     u.student_id
-                FROM Orders o
+                FROM orders o
                 JOIN users u ON o.user_id = u.user_id
                 $where_sql
                 ORDER BY o.order_date ASC
@@ -454,7 +454,7 @@
                 SELECT
                     o.order_id, o.order_date, o.total_amount, o.status,
                     u.student_id, u.full_name, u.contact_number
-                FROM Orders o
+                FROM orders o
                 JOIN users u ON o.user_id = u.user_id
                 WHERE o.order_id = :order_id 
                 LIMIT 1
@@ -473,9 +473,9 @@
                     g.item_name,
                     oi.stock_id,
                     s.garment_id
-                FROM Order_Items oi
-                JOIN Stocks s ON oi.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM order_items oi
+                JOIN stocks s ON oi.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 WHERE oi.order_id = :order_id
             ";
             $items_result = $this->select($sql_items, [':order_id' => $order_id]);
@@ -490,7 +490,7 @@
             }
             
             $order_info_sql = "SELECT o.user_id, u.email_address, u.full_name 
-                               FROM Orders o 
+                               FROM orders o 
                                JOIN users u ON o.user_id = u.user_id 
                                WHERE o.order_id = :order_id LIMIT 1";
             $order_info = $this->select($order_info_sql, [':order_id' => $order_id]);
@@ -507,7 +507,7 @@
                     }
                     $studentObj = new Student($this->conn); 
 
-                    $sql_items = "SELECT stock_id, quantity FROM Order_Items WHERE order_id = :order_id";
+                    $sql_items = "SELECT stock_id, quantity FROM order_items WHERE order_id = :order_id";
                     $items_to_restock = $this->select($sql_items, [':order_id' => $order_id]);
 
                     foreach ($items_to_restock as $item) {
@@ -531,7 +531,7 @@
                 }
             }
 
-            $sql = "UPDATE Orders SET status = :new_status";
+            $sql = "UPDATE orders SET status = :new_status";
             $params = [
                 ':new_status' => $new_status,
                 ':order_id' => $order_id
@@ -539,7 +539,7 @@
             
             if ($new_status == 'Completed') { 
                 try {
-                    $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Orders' AND COLUMN_NAME = 'date_fulfilled'");
+                    $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'date_fulfilled'");
                     if ($check_col) {
                          $sql .= ", date_fulfilled = NOW()"; 
                     }
@@ -581,33 +581,33 @@
                         $email_subject = "Your Order #[{$order_id}] is Approved!";
                         $email_header = "Order Approved";
                         $body_student = "<p>Hi " . htmlspecialchars($user_name) . ",</p>"
-                                    . "<p>Your order <strong>#{$order_id}</strong> has been approved and is now being prepared by our team.</p>"
-                                    . "<p>We will notify you again when it is ready for pickup.</p>"
-                                    . "<p class='button-wrapper'><a href='http://localhost/garment_ordering_system/student/order_receipt.php?id={$order_id}' class='cta-button'>View Order Status</a></p>";
+                                      . "<p>Your order <strong>#{$order_id}</strong> has been approved and is now being prepared by our team.</p>"
+                                      . "<p>We will notify you again when it is ready for pickup.</p>"
+                                      . "<p class='button-wrapper'><a href='http://localhost/garment_ordering_system/student/order_receipt.php?id={$order_id}' class='cta-button'>View Order Status</a></p>";
                         break;
                     case 'Ready for Pickup':
                         $message = "Your Order #{$order_id} is now Ready for Pickup!";
                         $email_subject = "Your Order #[{$order_id}] is Ready for Pickup!";
                         $email_header = "Ready for Pickup";
                         $body_student = "<p>Hi " . htmlspecialchars($user_name) . ",</p>"
-                                    . "<p>Great news! Your order <strong>#{$order_id}</strong> is now ready for pickup.</p>"
-                                    . "<p>Please proceed to the garments distribution area with your digital order slip and payment receipt.</p>"
-                                    . "<p class='button-wrapper'><a href='http://localhost/garment_ordering_system/student/order_receipt.php?id={$order_id}' class='cta-button'>View Order Slip</a></p>";
+                                      . "<p>Great news! Your order <strong>#{$order_id}</strong> is now ready for pickup.</p>"
+                                      . "<p>Please proceed to the garments distribution area with your digital order slip and payment receipt.</p>"
+                                      . "<p class='button-wrapper'><a href='http://localhost/garment_ordering_system/student/order_receipt.php?id={$order_id}' class='cta-button'>View Order Slip</a></p>";
                         break;
                     case 'Completed':
                         $message = "Your Order #{$order_id} has been completed.";
                         $email_subject = "Your Order #[{$order_id}] is Completed";
                         $email_header = "Order Completed";
                         $body_student = "<p>Hi " . htmlspecialchars($user_name) . ",</p>"
-                                    . "<p>Your order <strong>#{$order_id}</strong> has been marked as completed. Thank you for shopping with us!</p>";
+                                      . "<p>Your order <strong>#{$order_id}</strong> has been marked as completed. Thank you for shopping with us!</p>";
                         break;
                     case 'Rejected':
                         $message = "Your Order #{$order_id} has been rejected.";
                         $email_subject = "Your Order #[{$order_id}] has been Rejected";
                         $email_header = "Order Rejected";
                         $body_student = "<p>Hi " . htmlspecialchars($user_name) . ",</p>"
-                                    . "<p>Unfortunately, your order <strong>#{$order_id}</strong> has been rejected. This may be due to a stock issue or other reason.</p>"
-                                    . "<p>The items in this order have been restocked. Please contact the administrator for more details if needed.</p>";
+                                      . "<p>Unfortunately, your order <strong>#{$order_id}</strong> has been rejected. This may be due to a stock issue or other reason.</p>"
+                                      . "<p>The items in this order have been restocked. Please contact the administrator for more details if needed.</p>";
                         break;
                 }
                 
@@ -633,7 +633,7 @@
         public function getOrderSummaryCounts() {
             $sql = "
                 SELECT status, COUNT(*) as count 
-                FROM Orders 
+                FROM orders 
                 GROUP BY status
             ";
             $results = $this->select($sql);
@@ -650,8 +650,8 @@
                     g.item_name, 
                     s.size, 
                     s.current_stock
-                FROM Stocks s
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM stocks s
+                JOIN garment g ON s.garment_id = g.garment_id
                 WHERE s.current_stock <= :threshold AND g.is_deleted = 0
                 ORDER BY s.current_stock ASC
             ";
@@ -689,11 +689,11 @@
             // 1. Total Count
             $count_sql = "
                 SELECT COUNT(*) as total
-                FROM Order_Items oi
-                JOIN Orders o ON oi.order_id = o.order_id
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
                 JOIN users u ON o.user_id = u.user_id
-                JOIN Stocks s ON oi.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                JOIN stocks s ON oi.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 $where_sql
             ";
             $count_res = $this->select($count_sql, $params);
@@ -711,11 +711,11 @@
                     oi.quantity, 
                     oi.unit_price, 
                     oi.subtotal
-                FROM Order_Items oi
-                JOIN Orders o ON oi.order_id = o.order_id
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
                 JOIN users u ON o.user_id = u.user_id
-                JOIN Stocks s ON oi.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                JOIN stocks s ON oi.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 $where_sql
                 ORDER BY o.order_date DESC, oi.order_id DESC
                 LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
@@ -760,9 +760,9 @@
             // 1. Total Count
             $count_sql = "
                 SELECT COUNT(*) as total
-                FROM Stock_Movement_Log log
-                JOIN Stocks s ON log.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM stock_movement_log log
+                JOIN stocks s ON log.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 $where_sql
             ";
             $count_res = $this->select($count_sql, $params);
@@ -780,9 +780,9 @@
                     log.order_id,
                     u.username as admin_username, -- Changed from full_name for clarity
                     log.notes
-                FROM Stock_Movement_Log log
-                JOIN Stocks s ON log.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM stock_movement_log log
+                JOIN stocks s ON log.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 LEFT JOIN users u ON log.user_id = u.user_id -- Left join for system actions (sale, etc)
                 $where_sql
                 ORDER BY log.timestamp DESC
@@ -803,10 +803,10 @@
                 SELECT 
                     g.item_name, 
                     SUM(oi.quantity) as total_quantity_sold
-                FROM Order_Items oi
-                JOIN Orders o ON oi.order_id = o.order_id
-                JOIN Stocks s ON oi.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                JOIN stocks s ON oi.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 WHERE o.status = 'Completed' -- Only count completed orders
             ";
             
@@ -816,7 +816,7 @@
             if (!empty($filters['start_date'])) {
                 $date_column = 'o.order_date'; 
                  try {
-                    $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Orders' AND COLUMN_NAME = 'date_fulfilled'");
+                    $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'date_fulfilled'");
                     if ($check_col) {
                          $date_column = 'o.date_fulfilled';
                     }
@@ -828,7 +828,7 @@
             if (!empty($filters['end_date'])) {
                 $date_column = 'o.order_date';
                  try {
-                    $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Orders' AND COLUMN_NAME = 'date_fulfilled'");
+                    $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'date_fulfilled'");
                     if ($check_col) {
                          $date_column = 'o.date_fulfilled';
                     }
@@ -867,9 +867,9 @@
                     oi.quantity, oi.size,
                     s.garment_id,
                     g.item_name
-                FROM Order_Items oi
-                JOIN Stocks s ON oi.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM order_items oi
+                JOIN stocks s ON oi.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 WHERE oi.order_id = :order_id AND oi.stock_id = :stock_id
                 LIMIT 1
             ";
@@ -879,7 +879,7 @@
 
         public function getAvailableSizesForGarmentAdmin($garment_id) {
             $sql = "SELECT stock_id, size, current_stock
-                    FROM Stocks
+                    FROM stocks
                     WHERE garment_id = :garment_id
                     ORDER BY FIELD(size, 'Extra Small', 'Small', 'Medium', 'Large', 'Extra Large')";
             return $this->select($sql, [':garment_id' => $garment_id]);
@@ -890,8 +890,8 @@
             
             $new_stock_sql = "
                 SELECT s.size, s.current_stock, g.unit_price
-                FROM Stocks s
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM stocks s
+                JOIN garment g ON s.garment_id = g.garment_id
                 WHERE s.stock_id = :new_stock_id
                 LIMIT 1
             ";
@@ -912,7 +912,7 @@
                 $this->conn->beginTransaction();
 
                 $old_stock_level_before = $this->getCurrentStockLevel($old_stock_id);
-                $sql_restore = "UPDATE Stocks SET current_stock = current_stock + :qty WHERE stock_id = :old_stock_id";
+                $sql_restore = "UPDATE stocks SET current_stock = current_stock + :qty WHERE stock_id = :old_stock_id";
                 $this->execute($sql_restore, [':qty' => $quantity, ':old_stock_id' => $old_stock_id]);
                 
                 $this->addStockMovementLog(
@@ -926,7 +926,7 @@
                 );
 
                 $new_stock_level_before = $new_stock_details['current_stock'];
-                $sql_reduce = "UPDATE Stocks SET current_stock = current_stock - :qty WHERE stock_id = :new_stock_id";
+                $sql_reduce = "UPDATE stocks SET current_stock = current_stock - :qty WHERE stock_id = :new_stock_id";
                 $this->execute($sql_reduce, [':qty' => $quantity, ':new_stock_id' => $new_stock_id]);
 
                 $this->addStockMovementLog(
@@ -944,7 +944,7 @@
                 $new_subtotal = $new_price * $quantity;
 
                 $sql_update_item = "
-                    UPDATE Order_Items
+                    UPDATE order_items
                     SET stock_id = :new_stock_id,
                         size = :new_size,
                         unit_price = :new_price,
@@ -960,11 +960,11 @@
                     ':old_stock_id' => $old_stock_id
                 ]);
 
-                $sql_sum = "SELECT SUM(subtotal) as new_total FROM Order_Items WHERE order_id = :order_id";
+                $sql_sum = "SELECT SUM(subtotal) as new_total FROM order_items WHERE order_id = :order_id";
                 $sum_result = $this->select($sql_sum, [':order_id' => $order_id]);
                 $new_order_total = $sum_result[0]['new_total'] ?? 0;
 
-                $sql_update_order = "UPDATE Orders SET total_amount = :new_total WHERE order_id = :order_id";
+                $sql_update_order = "UPDATE orders SET total_amount = :new_total WHERE order_id = :order_id";
                 $this->execute($sql_update_order, [':new_total' => $new_order_total, ':order_id' => $order_id]);
 
                 $this->conn->commit();
@@ -1064,7 +1064,7 @@
                 SELECT 
                     DATE(order_date) as sale_date, 
                     SUM(total_amount) as daily_total
-                FROM Orders
+                FROM orders
                 WHERE status = 'Completed'
             ";
             
@@ -1100,10 +1100,10 @@
                 SELECT 
                     g.category, 
                     SUM(oi.subtotal) as category_total
-                FROM Order_Items oi
-                JOIN Orders o ON oi.order_id = o.order_id
-                JOIN Stocks s ON oi.stock_id = s.stock_id
-                JOIN Garment g ON s.garment_id = g.garment_id
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                JOIN stocks s ON oi.stock_id = s.stock_id
+                JOIN garment g ON s.garment_id = g.garment_id
                 WHERE o.status = 'Completed'
             ";
             
@@ -1140,7 +1140,7 @@
                     u.student_id,
                     u.full_name,
                     SUM(o.total_amount) as total_spent
-                FROM Orders o
+                FROM orders o
                 JOIN users u ON o.user_id = u.user_id
                 WHERE o.status = 'Completed'
                 AND u.role = 'student'
@@ -1165,21 +1165,21 @@
             
             $date_column = 'o.order_date';
             try {
-                $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Orders' AND COLUMN_NAME = 'date_fulfilled'");
+                $check_col = $this->select("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'date_fulfilled'");
                 if ($check_col) {
                      $date_column = 'o.date_fulfilled';
                 }
             } catch (Exception $e) { }
     
-            $sql_total = "SELECT SUM(o.total_amount) as total FROM Orders o WHERE o.status = 'Completed'";
+            $sql_total = "SELECT SUM(o.total_amount) as total FROM orders o WHERE o.status = 'Completed'";
             $result_total = $this->select($sql_total);
             $stats['total_revenue'] = $result_total[0]['total'] ?? 0;
     
-            $sql_month = "SELECT SUM(o.total_amount) as total FROM Orders o WHERE o.status = 'Completed' AND YEAR($date_column) = YEAR(NOW()) AND MONTH($date_column) = MONTH(NOW())";
+            $sql_month = "SELECT SUM(o.total_amount) as total FROM orders o WHERE o.status = 'Completed' AND YEAR($date_column) = YEAR(NOW()) AND MONTH($date_column) = MONTH(NOW())";
             $result_month = $this->select($sql_month);
             $stats['monthly_revenue'] = $result_month[0]['total'] ?? 0;
             
-            $sql_today = "SELECT SUM(o.total_amount) as total FROM Orders o WHERE o.status = 'Completed' AND DATE($date_column) = CURDATE()";
+            $sql_today = "SELECT SUM(o.total_amount) as total FROM orders o WHERE o.status = 'Completed' AND DATE($date_column) = CURDATE()";
             $result_today = $this->select($sql_today);
             $stats['total_sales_today'] = $result_today[0]['total'] ?? 0;
     
@@ -1187,32 +1187,48 @@
         }
 
         public function getNotifications($user_id, $limit = 10) {
-            $sql = "SELECT *, 
-                       CASE 
-                           WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), 'm ago')
-                           WHEN TIMESTAMPDIFF(HOUR, created_at, NOW()) < 24 THEN CONCAT(TIMESTAMPDIFF(HOUR, created_at, NOW()), 'h ago')
-                           ELSE CONCAT(TIMESTAMPDIFF(DAY, created_at, NOW()), 'd ago')
-                       END as time_ago
-                FROM Notifications
-                WHERE user_id = :user_id
-                ORDER BY created_at DESC
+        // 1. Select raw data
+        $sql = "SELECT * FROM notifications 
+                WHERE user_id = :user_id 
+                ORDER BY created_at DESC 
                 LIMIT :limit";
         
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. Calculate 'Time Ago' using PHP
+        foreach ($notifications as &$notif) {
+            $time_db = strtotime($notif['created_at']);
+            $time_now = time(); 
+            $diff = $time_now - $time_db;
+
+            if ($diff < 10) {
+                $notif['time_ago'] = 'Just now';
+            } elseif ($diff < 60) {
+                $notif['time_ago'] = $diff . 's ago';
+            } elseif ($diff < 3600) {
+                $notif['time_ago'] = floor($diff / 60) . 'm ago';
+            } elseif ($diff < 86400) {
+                $notif['time_ago'] = floor($diff / 3600) . 'h ago';
+            } else {
+                $notif['time_ago'] = floor($diff / 86400) . 'd ago';
+            }
         }
 
+        return $notifications;
+    }
+
         public function getUnreadNotificationCount($user_id) {
-            $sql = "SELECT COUNT(*) as unread_count FROM Notifications WHERE user_id = :user_id AND is_read = 0";
+            $sql = "SELECT COUNT(*) as unread_count FROM notifications WHERE user_id = :user_id AND is_read = 0";
             $result = $this->select($sql, [':user_id' => $user_id]);
             return $result[0]['unread_count'] ?? 0;
         }
 
         public function markNotificationsAsRead($user_id) {
-            $sql = "UPDATE Notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0";
+            $sql = "UPDATE notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0";
             $stmt = $this->execute($sql, [':user_id' => $user_id]);
             return $stmt->rowCount() > 0;
         }
@@ -1221,7 +1237,7 @@
         public function autoCancelOldOrders($days = 5) {
             $cutoff_date = date('Y-m-d H:i:s', strtotime("-$days days"));
             
-            $sql = "SELECT order_id FROM Orders 
+            $sql = "SELECT order_id FROM orders 
                     WHERE status IN ('Pending', 'Ready for Pickup') 
                     AND order_date < :cutoff";
             
@@ -1240,8 +1256,8 @@
             $sql = "SELECT 
                         SUM(s.current_stock * g.unit_price) as total_value,
                         SUM(s.current_stock) as total_items
-                    FROM Stocks s
-                    JOIN Garment g ON s.garment_id = g.garment_id
+                    FROM stocks s
+                    JOIN garment g ON s.garment_id = g.garment_id
                     WHERE g.is_deleted = 0";
             
             $result = $this->select($sql);
@@ -1254,7 +1270,7 @@
                     status, 
                     COUNT(*) as count, 
                     SUM(total_amount) as total_lost
-                FROM Orders
+                FROM orders
                 WHERE status IN ('Cancelled', 'Rejected')
             ";
             
@@ -1296,9 +1312,9 @@
             // 1. Total Count
             $count_sql = "
                 SELECT COUNT(*) as total 
-                FROM Garment_Reviews r
-                JOIN Users u ON r.user_id = u.user_id
-                JOIN Garment g ON r.garment_id = g.garment_id
+                FROM garment_reviews r
+                JOIN users u ON r.user_id = u.user_id
+                JOIN garment g ON r.garment_id = g.garment_id
                 $where_sql
             ";
             $count_res = $this->select($count_sql, $params);
@@ -1313,9 +1329,9 @@
                     r.created_at,
                     u.full_name,
                     g.item_name
-                FROM Garment_Reviews r
-                JOIN Users u ON r.user_id = u.user_id
-                JOIN Garment g ON r.garment_id = g.garment_id
+                FROM garment_reviews r
+                JOIN users u ON r.user_id = u.user_id
+                JOIN garment g ON r.garment_id = g.garment_id
                 $where_sql
                 ORDER BY r.created_at DESC
                 LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
@@ -1330,7 +1346,7 @@
         }
 
         public function deleteReview($review_id) {
-            $sql = "DELETE FROM Garment_Reviews WHERE review_id = :review_id";
+            $sql = "DELETE FROM garment_reviews WHERE review_id = :review_id";
             $stmt = $this->execute($sql, [':review_id' => $review_id]);
             return $stmt->rowCount() > 0;
         }

@@ -2,6 +2,7 @@
     session_start();
     require_once "../config.php"; 
     require_once "../classes/student.php";
+    require_once __DIR__ . "/../classes/Csrf.php"; 
 
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'student' || empty($_SESSION['user']['user_id'])) {
         header("Location: ../login.php"); exit();
@@ -16,7 +17,7 @@
     $student_id = $_SESSION['user']['student_id'] ?? null; 
     $user_id = $_SESSION['user']['user_id'] ?? null;
 
-     if (empty($student_id) || empty($user_id)) {
+    if (empty($student_id) || empty($user_id)) {
         error_log("Student ID or User ID missing from session in order_summary."); session_destroy();
         header("Location: ../login.php?error=session_expired"); exit();
     }
@@ -46,8 +47,8 @@
     elseif (!empty($summary_message)) { $summary_message_type = 'success'; }
     
     if ($has_stock_warning && empty($summary_message)) { 
-         $summary_message = "Warning: Some item quantities exceed available stock. Please adjust before submitting."; 
-         $summary_message_type = 'warning'; 
+          $summary_message = "Warning: Some item quantities exceed available stock. Please adjust before submitting."; 
+          $summary_message_type = 'warning'; 
     }
     unset($_SESSION['cart_message'], $_SESSION['cart_error_stock_id']); 
 
@@ -129,15 +130,15 @@
                     <li><a href="#" class="btn btn-danger btn-sm" onclick="confirmLogout(event)">Logout</a></li> 
                     <li class="nav-notification">
                        <a href="#" id="notification-icon" class="notification-icon">
-                           <i class="fas fa-bell"></i>
-                           <span id="notification-badge" class="notification-badge" style="display:none;">0</span>
+                            <i class="fas fa-bell"></i>
+                            <span id="notification-badge" class="notification-badge" style="display:none;">0</span>
                        </a>
                        <div id="notification-dropdown" class="notification-dropdown">
-                           <div class="notification-header">Notifications</div>
-                           <div class="notification-list">
-                               <div class="notification-item">Loading...</div>
-                           </div>
-                           <a href="view_order_history.php" class="notification-footer">View All Orders</a>
+                            <div class="notification-header">Notifications</div>
+                            <div class="notification-list">
+                                <div class="notification-item">Loading...</div>
+                            </div>
+                            <a href="view_order_history.php" class="notification-footer">View All Orders</a>
                        </div>
                     </li>
                 </ul> 
@@ -192,21 +193,21 @@
                             <input type="hidden" name="old_stock_id" value="<?= $stock_id ?>"> 
                             <select name="new_stock_id" title="Change size" class="cart-update-trigger"> <?php foreach ($item['available_sizes'] as $size_option): ?> <option value="<?= $size_option['stock_id'] ?>" <?= ($size_option['stock_id'] == $stock_id) ? 'selected' : '' ?> <?php if($size_option['current_stock'] <= 0 && $size_option['stock_id'] != $stock_id) echo 'disabled'; ?> > <?= htmlspecialchars($size_option['size']) ?> (<?= $size_option['current_stock'] ?> avail.) </option> <?php endforeach; ?> </select> 
                             </form> 
-                        </td>
+                            </td>
                             <td data-label="Quantity">
                                 <form action="order_placement.php" method="POST" class="form-group qty-update-form" style="display:inline-block; margin-bottom: 0;">
                                     <?= Csrf::getInput() ?>
                                     <input type="hidden" name="return_to" value="order_summary.php">
                                     <input type="hidden" name="action" value="update_quantity"> <input type="hidden" name="stock_id" value="<?= $stock_id ?>">
-                                    <input type="number" name="new_quantity" value="<?= $item['quantity'] ?>" min="0" max="<?= $item['current_stock_level'] ?>" title="Update quantity (Max: <?= $item['current_stock_level'] ?>)" class="cart-update-trigger" 
-                                           style="<?= ($error_stock_id == $stock_id) ? 'border-color: var(--danger);' : ''  ?>" >
+                                    <input type="number" name="new_quantity" value="<?= $item['quantity'] ?>" min="0" max="<?= $item['current_stock_level'] ?>" title="Update quantity (Max: <?= $item['current_stock_level'] ?>)" class="cart-update-trigger quantity-input" 
+                                            data-stock-id="<?= $stock_id ?>" style="<?= ($error_stock_id == $stock_id) ? 'border-color: var(--danger);' : ''  ?>" >
                                 </form>
                                 <?php 
                                     if ($error_stock_id == $stock_id && $summary_message_type == 'error') {
                                         echo '<span class="inline-error"><i class="fas fa-exclamation-triangle"></i> ' . htmlspecialchars(str_replace("Error: ", "", $summary_message)) . '</span>'; 
                                     } 
                                     elseif (!empty($item['stock_warning'])) {
-                                         echo '<span class="stock-warning"><i class="fas fa-exclamation-triangle"></i> ' . htmlspecialchars($item['stock_warning']) . '</span>';
+                                            echo '<span class="stock-warning"><i class="fas fa-exclamation-triangle"></i> ' . htmlspecialchars($item['stock_warning']) . '</span>';
                                     }
                                 ?>
                             </td>
@@ -308,6 +309,25 @@
         </div>
     </div>
 
+    <div class="modal fade" id="zeroQuantityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="color: #333;">
+                <div class="modal-header modal-header-custom" style="background-color: orange;">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i> Confirm Removal</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Setting the quantity to zero will remove this item from your cart.</p>
+                    <p>Are you sure you want to proceed?</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelZeroQuantity">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmZeroQuantity">Yes, Remove Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -323,8 +343,9 @@
             </div>
         </div>
     </div>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/main_student.js"></script>
     
     <script> 
         function confirmLogout(event) {
@@ -333,12 +354,33 @@
             logoutModal.show();
         }
 
+        function confirmSubmitOrder() {
+            var orderModal = new bootstrap.Modal(document.getElementById('confirmOrderModal'));
+            orderModal.show();
+        }
+
+        function submitActualOrder() {
+            document.getElementById('submitOrderForm').submit();
+        }
+
+        function confirmClearCart() {
+            var clearModal = new bootstrap.Modal(document.getElementById('confirmClearCartModal'));
+            clearModal.show();
+        }
+
+        function submitActualClearCart() {
+            document.getElementById('clearCartForm').submit();
+        }
+        
         document.addEventListener('DOMContentLoaded', function() { 
             const loadingOverlay = document.getElementById('loading-overlay'); 
             const cartContainer = document.getElementById('cart-container'); 
             const navCartLink = document.getElementById('nav-cart-link'); 
             let formToRemove = null;
-
+            
+            let currentInput = null;
+            const zeroQuantityModal = new bootstrap.Modal(document.getElementById('zeroQuantityModal'));
+            
             function showLoading() { if (loadingOverlay) loadingOverlay.classList.add('visible'); } 
             function hideLoading() { if (loadingOverlay) loadingOverlay.classList.remove('visible'); } 
             
@@ -372,6 +414,37 @@
                     updateCart(formToRemove);
                 }
             };
+            
+            document.getElementById('cancelZeroQuantity').addEventListener('click', function() {
+                if (currentInput) {
+                 
+                    currentInput.value = currentInput.dataset.previousValue || 1;
+                    
+                }
+                currentInput = null;
+                zeroQuantityModal.hide();
+            });
+
+            document.getElementById('confirmZeroQuantity').addEventListener('click', function() {
+                if (currentInput) {
+                    const row = currentInput.closest('tr');
+                    const removeForm = row ? row.querySelector('.actions-cell form') : null; 
+                    
+                    if (removeForm) {
+                        formToRemove = removeForm;
+                        
+                        zeroQuantityModal.hide();
+
+                        submitActualRemoveItem(); 
+                    }
+                    currentInput = null;
+                } else {
+                    zeroQuantityModal.hide();
+                }
+            });
+            
+       
+
 
             function attachListeners() { 
                 const triggers = cartContainer.querySelectorAll('.cart-update-trigger'); 
@@ -379,9 +452,30 @@
                     const form = trigger.closest('form'); 
                     if (!form) return; 
                     
-                    if (trigger.tagName === 'SELECT' || (trigger.tagName === 'INPUT' && trigger.type === 'number')) { 
+                    if (trigger.tagName === 'SELECT') { 
+                     
                         trigger.addEventListener('change', function() { updateCart(form); }); 
+                    } else if (trigger.tagName === 'INPUT' && trigger.type === 'number') { 
+                      
+                        const input = trigger;
+                        
+                        input.dataset.previousValue = input.value;
+                        input.addEventListener('focus', function() {
+                            this.dataset.previousValue = this.value;
+                        });
+
+                        input.addEventListener('change', function() {
+                             if (parseInt(this.value) === 0) {
+                                 currentInput = this; 
+                                 zeroQuantityModal.show(); 
+                             } else {
+                               
+                                 updateCart(form); 
+                             }
+                        }); 
+                        // ------------------------------------------------
                     } else if (trigger.tagName === 'BUTTON' && trigger.classList.contains('btn-remove')) { 
+                   
                         trigger.addEventListener('click', function() { 
                             formToRemove = form;
                             var removeModal = new bootstrap.Modal(document.getElementById('confirmRemoveItemModal'));
@@ -392,25 +486,6 @@
             } 
             attachListeners(); 
         }); 
-
-        function confirmSubmitOrder() {
-            var orderModal = new bootstrap.Modal(document.getElementById('confirmOrderModal'));
-            orderModal.show();
-        }
-
-        function submitActualOrder() {
-            document.getElementById('submitOrderForm').submit();
-        }
-
-        function confirmClearCart() {
-            var clearModal = new bootstrap.Modal(document.getElementById('confirmClearCartModal'));
-            clearModal.show();
-        }
-
-        function submitActualClearCart() {
-            document.getElementById('clearCartForm').submit();
-        }
     </script>
-    <script src="../js/main_student.js"></script>
 </body>
 </html>

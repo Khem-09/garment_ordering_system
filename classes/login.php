@@ -15,7 +15,7 @@ class Login extends Database {
 
     public function login() {
         $sql = "SELECT user_id, student_id, username, email_address, password_hash, role, is_active, is_email_verified, full_name
-                FROM Users 
+                FROM users 
                 WHERE email_address = :email OR student_id = :student_id
                 LIMIT 1";
         

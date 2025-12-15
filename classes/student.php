@@ -23,7 +23,7 @@ class Student extends Database {
                 contact_number,
                 college
             FROM
-                Users
+                users
             WHERE
                 student_id = :student_id
             LIMIT 1
@@ -40,7 +40,7 @@ class Student extends Database {
     }
 
     private function getCurrentStockLevel($stock_id) {
-        $result = $this->select("SELECT current_stock FROM Stocks WHERE stock_id = :stock_id LIMIT 1", [':stock_id' => $stock_id]);
+        $result = $this->select("SELECT current_stock FROM stocks WHERE stock_id = :stock_id LIMIT 1", [':stock_id' => $stock_id]);
         return $result ? (int)$result[0]['current_stock'] : 0;
     }
 
@@ -51,9 +51,9 @@ class Student extends Database {
                 s.stock_id, s.size, s.current_stock,
                 AVG(r.rating) as average_rating,
                 COUNT(DISTINCT r.review_id) as review_count
-            FROM Garment g
-            JOIN Stocks s ON g.garment_id = s.garment_id
-            LEFT JOIN Garment_Reviews r ON g.garment_id = r.garment_id
+            FROM garment g
+            JOIN stocks s ON g.garment_id = s.garment_id
+            LEFT JOIN garment_reviews r ON g.garment_id = r.garment_id
             WHERE s.current_stock > 0
             AND g.is_deleted = 0
         ";
@@ -114,9 +114,9 @@ class Student extends Database {
                 s.stock_id, s.garment_id, s.size, s.current_stock,
                 g.unit_price, g.item_name, g.image_url, g.is_deleted
             FROM
-                Stocks s
+                stocks s
             JOIN
-                Garment g ON s.garment_id = g.garment_id
+                garment g ON s.garment_id = g.garment_id
             WHERE
                 s.stock_id = :stock_id
             AND g.is_deleted = 0
@@ -129,7 +129,7 @@ class Student extends Database {
     public function reduceStock($stock_id, $quantity, $expected_stock, $order_id) {
         try {
             $sql = "
-                UPDATE Stocks
+                UPDATE stocks
                 SET current_stock = current_stock - :qty
                 WHERE stock_id = :id
                 AND current_stock = :expected_stock
@@ -166,8 +166,8 @@ class Student extends Database {
                     null,
                     $order_id, 
                     "Stock reduced due to order completion."
-                 );
-                 return true;
+                  );
+                  return true;
             } else {
                 return false;
             }
@@ -180,7 +180,7 @@ class Student extends Database {
 
     public function restoreStock($stock_id, $quantity) {
         try {
-            $sql = "UPDATE Stocks SET current_stock = current_stock + :qty WHERE stock_id = :id";
+            $sql = "UPDATE stocks SET current_stock = current_stock + :qty WHERE stock_id = :id";
             $stmt = $this->conn->prepare($sql);
             return $stmt->execute([':qty' => $quantity,':id'  => $stock_id]);
         } catch (PDOException $e) {
@@ -201,15 +201,15 @@ class Student extends Database {
                 GROUP_CONCAT(DISTINCT g.item_name SEPARATOR ', ') AS item_names,
                 GROUP_CONCAT(oi.size SEPARATOR ', ') AS item_sizes
             FROM
-                Orders o
+                orders o
             JOIN
-                Users u ON o.user_id = u.user_id
+                users u ON o.user_id = u.user_id
             LEFT JOIN
-                Order_Items oi ON o.order_id = oi.order_id
+                order_items oi ON o.order_id = oi.order_id
             LEFT JOIN
-                Stocks s ON oi.stock_id = s.stock_id
+                stocks s ON oi.stock_id = s.stock_id
             LEFT JOIN
-                Garment g ON s.garment_id = g.garment_id
+                garment g ON s.garment_id = g.garment_id
             WHERE
                 u.student_id = :student_id
                 AND o.order_date <= :currentDate 
@@ -223,9 +223,9 @@ class Student extends Database {
         if (!empty($search_query)) {
              $sql .= " AND o.order_id IN (
                           SELECT oi_sub.order_id
-                          FROM Order_Items oi_sub
-                          JOIN Stocks s_sub ON oi_sub.stock_id = s_sub.stock_id
-                          JOIN Garment g_sub ON s_sub.garment_id = g_sub.garment_id
+                          FROM order_items oi_sub
+                          JOIN stocks s_sub ON oi_sub.stock_id = s_sub.stock_id
+                          JOIN garment g_sub ON s_sub.garment_id = g_sub.garment_id
                           WHERE g_sub.item_name LIKE :search
                       )";
             $params[':search'] = '%' . $search_query . '%';
@@ -248,8 +248,8 @@ class Student extends Database {
             SELECT
                 o.order_id, o.order_date, o.total_amount, o.status,
                 u.student_id, u.first_name, u.last_name, u.middle_name, u.contact_number, u.college, u.email_address 
-            FROM Orders o
-            JOIN Users u ON o.user_id = u.user_id
+            FROM orders o
+            JOIN users u ON o.user_id = u.user_id
             WHERE o.order_id = :order_id
               AND u.student_id = :student_id
               AND o.order_date <= :currentDate
@@ -274,9 +274,9 @@ class Student extends Database {
             SELECT
                 oi.size, oi.unit_price, oi.quantity, oi.subtotal,
                 g.item_name
-            FROM Order_Items oi
-            JOIN Stocks s ON oi.stock_id = s.stock_id
-            JOIN Garment g ON s.garment_id = g.garment_id
+            FROM order_items oi
+            JOIN stocks s ON oi.stock_id = s.stock_id
+            JOIN garment g ON s.garment_id = g.garment_id
             WHERE oi.order_id = :order_id
         ";
         $params_items = [':order_id' => $order_id];
@@ -310,8 +310,8 @@ class Student extends Database {
             
             $sql_check = "
                 SELECT o.status, o.user_id, u.email_address, u.full_name 
-                FROM Orders o
-                JOIN Users u ON o.user_id = u.user_id
+                FROM orders o
+                JOIN users u ON o.user_id = u.user_id
                 WHERE o.order_id = :order_id
                 AND u.student_id = :student_id
                 LIMIT 1
@@ -329,7 +329,7 @@ class Student extends Database {
             $user_email = $order_info[0]['email_address'] ?? null;
             $user_name = $order_info[0]['full_name'] ?? 'Student';
 
-            $sql_items = "SELECT stock_id, quantity FROM Order_Items WHERE order_id = :order_id";
+            $sql_items = "SELECT stock_id, quantity FROM order_items WHERE order_id = :order_id";
             $items_to_restock = $this->select($sql_items, [':order_id' => $order_id]);
 
             foreach ($items_to_restock as $item) {
@@ -348,7 +348,7 @@ class Student extends Database {
                 }
             }
 
-            $sql_update_order = "UPDATE Orders SET status = 'Cancelled' WHERE order_id = :order_id AND status = :cancellable_status";
+            $sql_update_order = "UPDATE orders SET status = 'Cancelled' WHERE order_id = :order_id AND status = :cancellable_status";
             $stmt = $this->conn->prepare($sql_update_order);
             $success = $stmt->execute([':order_id' => $order_id, ':cancellable_status' => $cancellable_status]);
 
@@ -365,7 +365,7 @@ class Student extends Database {
                     null, 
                     $order_id,
                     "Stock restored due to student cancelling order."
-                 );
+                  );
              }
              
              $this->createNotification(
@@ -390,9 +390,9 @@ class Student extends Database {
                 ci.cart_item_id, ci.quantity,
                 s.stock_id, s.size, s.current_stock as current_stock_level, 
                 g.garment_id, g.item_name, g.unit_price, g.image_url
-            FROM Cart_Items ci
-            JOIN Stocks s ON ci.stock_id = s.stock_id
-            JOIN Garment g ON s.garment_id = g.garment_id
+            FROM cart_items ci
+            JOIN stocks s ON ci.stock_id = s.stock_id
+            JOIN garment g ON s.garment_id = g.garment_id
             WHERE ci.user_id = :user_id
             AND s.current_stock > 0
             AND g.is_deleted = 0
@@ -402,8 +402,8 @@ class Student extends Database {
 
     public function getCartCount($user_id) {
         $sql = "SELECT COUNT(ci.cart_item_id) as count 
-                FROM Cart_Items ci
-                JOIN Stocks s ON ci.stock_id = s.stock_id
+                FROM cart_items ci
+                JOIN stocks s ON ci.stock_id = s.stock_id
                 WHERE ci.user_id = :user_id AND s.current_stock > 0";
         $result = $this->select($sql, [':user_id' => $user_id]);
         return $result[0]['count'] ?? 0;
@@ -416,7 +416,7 @@ class Student extends Database {
         }
         $available_stock = $stock_details['current_stock'];
 
-        $sql_check = "SELECT cart_item_id, quantity FROM Cart_Items WHERE user_id = :user_id AND stock_id = :stock_id";
+        $sql_check = "SELECT cart_item_id, quantity FROM cart_items WHERE user_id = :user_id AND stock_id = :stock_id";
         $existing = $this->select($sql_check, [':user_id' => $user_id, ':stock_id' => $stock_id]);
 
         if ($existing) {
@@ -430,7 +430,7 @@ class Student extends Database {
                 ];
             }
 
-            $sql_update = "UPDATE Cart_Items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
+            $sql_update = "UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
             $this->execute($sql_update, [':quantity' => $new_quantity, ':cart_item_id' => $existing[0]['cart_item_id']]);
             return ['success' => true, 'message' => "Cart updated." ];
 
@@ -443,7 +443,7 @@ class Student extends Database {
                 ];
             }
 
-            $sql_insert = "INSERT INTO Cart_Items (user_id, stock_id, quantity) VALUES (:user_id, :stock_id, :quantity)";
+            $sql_insert = "INSERT INTO cart_items (user_id, stock_id, quantity) VALUES (:user_id, :stock_id, :quantity)";
             $this->execute($sql_insert, [
                 ':user_id' => $user_id,
                 ':stock_id' => $stock_id,
@@ -478,7 +478,7 @@ class Student extends Database {
                 'message' => "Max stock is {$available_stock}."
             ];
         }
-        $sql = "UPDATE Cart_Items SET quantity = :quantity WHERE user_id = :user_id AND stock_id = :stock_id";
+        $sql = "UPDATE cart_items SET quantity = :quantity WHERE user_id = :user_id AND stock_id = :stock_id";
         $stmt = $this->execute($sql, [
             ':quantity' => $new_quantity,
             ':user_id' => $user_id,
@@ -489,17 +489,17 @@ class Student extends Database {
     }
 
     public function removeFromCart($user_id, $stock_id) {
-        $sql = "DELETE FROM Cart_Items WHERE user_id = :user_id AND stock_id = :stock_id";
+        $sql = "DELETE FROM cart_items WHERE user_id = :user_id AND stock_id = :stock_id";
         return $this->execute($sql, [':user_id' => $user_id, ':stock_id' => $stock_id]);
     }
 
     public function clearCart($user_id) {
-        $sql = "DELETE FROM Cart_Items WHERE user_id = :user_id";
+        $sql = "DELETE FROM cart_items WHERE user_id = :user_id";
         return $this->execute($sql, [':user_id' => $user_id]);
     }
 
     private function getPasswordHash($user_id) {
-        $sql = "SELECT password_hash FROM Users WHERE user_id = :user_id LIMIT 1";
+        $sql = "SELECT password_hash FROM users WHERE user_id = :user_id LIMIT 1";
         $result = $this->select($sql, [':user_id' => $user_id]);
         return $result ? $result[0]['password_hash'] : null;
     }
@@ -510,7 +510,7 @@ class Student extends Database {
         $last_name = !empty($name_parts) ? array_pop($name_parts) : '';
         $middle_name = count($name_parts) > 1 ? implode(' ', array_slice($name_parts, 1)) : '';
         
-        $sql = "UPDATE Users
+        $sql = "UPDATE users
                 SET first_name = :first_name,
                     last_name = :last_name,
                     middle_name = :middle_name,
@@ -545,7 +545,7 @@ class Student extends Database {
     }
 
     public function requestPasswordChangeOTP($user_id) {
-        $sql_user = "SELECT email_address, first_name FROM Users WHERE user_id = :user_id LIMIT 1";
+        $sql_user = "SELECT email_address, first_name FROM users WHERE user_id = :user_id LIMIT 1";
         $user = $this->select($sql_user, [':user_id' => $user_id]);
         
         if (empty($user)) return false;
@@ -556,7 +556,7 @@ class Student extends Database {
         $otp_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-        $sql_update = "UPDATE Users SET reset_token = :otp, reset_token_expiry = :expiry WHERE user_id = :user_id";
+        $sql_update = "UPDATE users SET reset_token = :otp, reset_token_expiry = :expiry WHERE user_id = :user_id";
         $this->execute($sql_update, [
             ':otp' => $otp_code,
             ':expiry' => $expiry,
@@ -585,7 +585,7 @@ class Student extends Database {
     public function verifyOTPAndChangePassword($user_id, $code, $new_password) {
         $current_time_php = date('Y-m-d H:i:s');
 
-        $sql = "SELECT user_id FROM Users WHERE user_id = :user_id AND reset_token = :otp AND reset_token_expiry > :current_time LIMIT 1";
+        $sql = "SELECT user_id FROM users WHERE user_id = :user_id AND reset_token = :otp AND reset_token_expiry > :current_time LIMIT 1";
         $result = $this->select($sql, [
             ':user_id' => $user_id, 
             ':otp' => $code,
@@ -597,7 +597,7 @@ class Student extends Database {
         }
 
         $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-        $sql_update = "UPDATE Users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :user_id";
+        $sql_update = "UPDATE users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :user_id";
         $this->execute($sql_update, [
             ':hash' => $new_hash,
             ':user_id' => $user_id
@@ -611,7 +611,7 @@ class Student extends Database {
     public function changePassword($user_id, $old_password, $new_password) {
         if ($this->verifyCurrentPassword($user_id, $old_password)) {
             $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-            $sql = "UPDATE Users SET password_hash = :new_hash WHERE user_id = :user_id";
+            $sql = "UPDATE users SET password_hash = :new_hash WHERE user_id = :user_id";
             $stmt = $this->execute($sql, [':new_hash' => $new_hash, ':user_id' => $user_id]);
             return $stmt->rowCount() > 0;
         }
@@ -620,7 +620,7 @@ class Student extends Database {
 
     public function getAvailableSizesForGarment($garment_id) {
         $sql = "SELECT stock_id, size, current_stock
-                FROM Stocks
+                FROM stocks
                 WHERE garment_id = :garment_id
                 AND current_stock > 0
                 ORDER BY FIELD(size, 'Extra Small', 'Small', 'Medium', 'Large', 'Extra Large')"; 
@@ -630,7 +630,7 @@ class Student extends Database {
     public function getGarmentDetails($garment_id) {
         $sql_garment = "
             SELECT garment_id, item_name, category, unit_price, image_url 
-            FROM Garment 
+            FROM garment 
             WHERE garment_id = :garment_id AND is_deleted = 0 
             LIMIT 1";
         $garment = $this->select($sql_garment, [':garment_id' => $garment_id]);
@@ -641,7 +641,7 @@ class Student extends Database {
         
         $sql_stocks = "
             SELECT stock_id, size, current_stock
-            FROM Stocks
+            FROM stocks
             WHERE garment_id = :garment_id AND current_stock > 0
             ORDER BY FIELD(size, 'Extra Small', 'Small', 'Medium', 'Large', 'Extra Large')";
         $stocks = $this->select($sql_stocks, [':garment_id' => $garment_id]);
@@ -655,15 +655,15 @@ class Student extends Database {
             SELECT 
                 r.rating, r.review_text, r.created_at,
                 u.full_name
-            FROM Garment_Reviews r
-            JOIN Users u ON r.user_id = u.user_id
+            FROM garment_reviews r
+            JOIN users u ON r.user_id = u.user_id
             WHERE r.garment_id = :garment_id
             ORDER BY r.created_at DESC
         ";
         $reviews = $this->select($sql, [':garment_id' => $garment_id]);
         
         $sql_avg = "SELECT AVG(rating) as average, COUNT(review_id) as count 
-                    FROM Garment_Reviews 
+                    FROM garment_reviews 
                     WHERE garment_id = :garment_id";
         $stats = $this->select($sql_avg, [':garment_id' => $garment_id]);
 
@@ -683,9 +683,9 @@ class Student extends Database {
         // 1. Find ALL eligible completed orders for this item
         $sql_find_orders = "
             SELECT o.order_id
-            FROM Orders o
-            JOIN Order_Items oi ON o.order_id = oi.order_id
-            JOIN Stocks s ON oi.stock_id = s.stock_id
+            FROM orders o
+            JOIN order_items oi ON o.order_id = oi.order_id
+            JOIN stocks s ON oi.stock_id = s.stock_id
             WHERE o.user_id = :user_id
             AND s.garment_id = :garment_id
             AND o.status = 'Completed'
@@ -708,7 +708,7 @@ class Student extends Database {
         foreach ($completed_orders as $order) {
             $current_oid = $order['order_id'];
             
-            $sql_check_review = "SELECT review_id FROM Garment_Reviews WHERE user_id = :user_id AND garment_id = :garment_id AND order_id = :order_id LIMIT 1";
+            $sql_check_review = "SELECT review_id FROM garment_reviews WHERE user_id = :user_id AND garment_id = :garment_id AND order_id = :order_id LIMIT 1";
             $has_review = $this->select($sql_check_review, [
                 ':user_id' => $user_id,
                 ':garment_id' => $garment_id,
@@ -726,7 +726,7 @@ class Student extends Database {
   
     public function submitReview($garment_id, $user_id, $order_id, $rating, $review_text) {
         $sql = "
-            INSERT INTO Garment_Reviews (garment_id, user_id, order_id, rating, review_text)
+            INSERT INTO garment_reviews (garment_id, user_id, order_id, rating, review_text)
             VALUES (:garment_id, :user_id, :order_id, :rating, :review_text)
         ";
         
@@ -747,32 +747,48 @@ class Student extends Database {
     }
 
     public function getNotifications($user_id, $limit = 10) {
-        $sql = "SELECT *, 
-                       CASE 
-                           WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), 'm ago')
-                           WHEN TIMESTAMPDIFF(HOUR, created_at, NOW()) < 24 THEN CONCAT(TIMESTAMPDIFF(HOUR, created_at, NOW()), 'h ago')
-                           ELSE CONCAT(TIMESTAMPDIFF(DAY, created_at, NOW()), 'd ago')
-                       END as time_ago
-                FROM Notifications
-                WHERE user_id = :user_id
-                ORDER BY created_at DESC
+        // 1. Select raw data (removed the SQL CASE calculation)
+        $sql = "SELECT * FROM notifications 
+                WHERE user_id = :user_id 
+                ORDER BY created_at DESC 
                 LIMIT :limit";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. Calculate 'Time Ago' using PHP (Manila Time)
+        foreach ($notifications as &$notif) {
+            $time_db = strtotime($notif['created_at']);
+            $time_now = time(); 
+            $diff = $time_now - $time_db;
+
+            if ($diff < 10) {
+                $notif['time_ago'] = 'Just now';
+            } elseif ($diff < 60) {
+                $notif['time_ago'] = $diff . 's ago';
+            } elseif ($diff < 3600) {
+                $notif['time_ago'] = floor($diff / 60) . 'm ago';
+            } elseif ($diff < 86400) {
+                $notif['time_ago'] = floor($diff / 3600) . 'h ago';
+            } else {
+                $notif['time_ago'] = floor($diff / 86400) . 'd ago';
+            }
+        }
+
+        return $notifications;
     }
 
     public function getUnreadNotificationCount($user_id) {
-        $sql = "SELECT COUNT(*) as unread_count FROM Notifications WHERE user_id = :user_id AND is_read = 0";
+        $sql = "SELECT COUNT(*) as unread_count FROM notifications WHERE user_id = :user_id AND is_read = 0";
         $result = $this->select($sql, [':user_id' => $user_id]);
         return $result[0]['unread_count'] ?? 0;
     }
 
     public function markNotificationsAsRead($user_id) {
-        $sql = "UPDATE Notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0";
+        $sql = "UPDATE notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0";
         $stmt = $this->execute($sql, [':user_id' => $user_id]);
         return $stmt->rowCount() > 0;
     }
@@ -781,11 +797,11 @@ class Student extends Database {
         $sql = "
             SELECT
                 g.garment_id, g.item_name, g.image_url, o.order_id
-            FROM Order_Items oi
-            JOIN Orders o ON oi.order_id = o.order_id
-            JOIN Stocks s ON oi.stock_id = s.stock_id
-            JOIN Garment g ON s.garment_id = g.garment_id
-            LEFT JOIN Garment_Reviews r ON (g.garment_id = r.garment_id AND r.order_id = o.order_id AND r.user_id = :user_id_join)
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.order_id
+            JOIN stocks s ON oi.stock_id = s.stock_id
+            JOIN garment g ON s.garment_id = g.garment_id
+            LEFT JOIN garment_reviews r ON (g.garment_id = r.garment_id AND r.order_id = o.order_id AND r.user_id = :user_id_join)
             WHERE o.user_id = :user_id_where
             AND o.status = 'Completed'
             AND r.review_id IS NULL

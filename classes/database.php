@@ -2,19 +2,24 @@
 require_once __DIR__ . '/../config.php';
 
 class Database {
-    protected $host = DB_HOST;
-    protected $username = DB_USER;    
-    protected $password = DB_PASS;        
-    protected $dbname = DB_NAME;
-
+    protected $host;
+    protected $username;
+    protected $password;
+    protected $dbname;
+    
     public $conn; 
 
     public function __construct($existing_conn = null) {
+        $this->host = "localhost";
+        $this->username = "u194078580_garment";
+        $this->password = "Garment123...";
+        $this->dbname = "u194078580_garment";
         if ($existing_conn) {
             $this->conn = $existing_conn;
             return;
         }
 
+        
         $this->conn = null;
         $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->dbname . ";charset=utf8mb4";
 
@@ -27,6 +32,7 @@ class Database {
         try {
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
 
+            $this->conn->exec("SET time_zone = '+08:00'");
             $this->conn->exec("SET SESSION innodb_lock_wait_timeout = 10"); 
             $this->conn->exec("SET SESSION wait_timeout = 10");
 
@@ -70,7 +76,7 @@ class Database {
             return false;
         }
 
-        $sql = "INSERT INTO Stock_Movement_Log 
+        $sql = "INSERT INTO stock_Movement_Log 
                     (stock_id, user_id, order_id, change_quantity, new_stock_level, movement_type, notes)
                 VALUES 
                     (:stock_id, :user_id, :order_id, :change_quantity, :new_stock_level, :movement_type, :notes)";
@@ -101,7 +107,7 @@ class Database {
         }
         
         try {
-            $sql = "INSERT INTO Notifications (user_id, message, link) VALUES (:user_id, :message, :link)";
+            $sql = "INSERT INTO notifications (user_id, message, link) VALUES (:user_id, :message, :link)";
             $this->execute($sql, [
                 ':user_id' => $user_id,
                 ':message' => $message,

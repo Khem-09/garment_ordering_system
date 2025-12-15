@@ -5,8 +5,9 @@ require_once __DIR__ . "/EmailSender.php";
 class Accounts extends Database {
 
     public function isStudentExist($student_id, $email) {
+        // Ensure table name 'users' is lowercase
         $sql = "SELECT COUNT(*) AS total
-                FROM Users
+                FROM users
                 WHERE student_id = :student_id OR email_address = :email";
 
         $result = $this->select($sql, [
@@ -31,7 +32,8 @@ class Accounts extends Database {
         $verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         $token_expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-        $sql = "INSERT INTO Users
+        // Ensure table name 'users' is lowercase
+        $sql = "INSERT INTO users
                     (student_id, username, first_name, last_name, middle_name, college, 
                      contact_number, email_address, password_hash, role,
                      is_email_verified, email_verification_token, token_expiry)
@@ -80,7 +82,7 @@ class Accounts extends Database {
     // Verify Signup OTP
     public function verifyAccountWithCode($email, $code) {
         $sql = "SELECT user_id, email_address 
-                FROM Users 
+                FROM users 
                 WHERE email_address = :email 
                 AND email_verification_token = :code 
                 AND is_email_verified = 0
@@ -96,7 +98,7 @@ class Accounts extends Database {
             $user_id = $user[0]['user_id'];
             
             // Activate User
-            $sql_update = "UPDATE Users 
+            $sql_update = "UPDATE users 
                            SET is_email_verified = 1,
                                email_verification_token = NULL,
                                token_expiry = NULL,
@@ -111,7 +113,7 @@ class Accounts extends Database {
 
     // --- Password Reset Methods ---
     public function requestPasswordReset($email) {
-        $sql = "SELECT user_id, first_name, last_name FROM Users WHERE email_address = :email LIMIT 1";
+        $sql = "SELECT user_id, first_name, last_name FROM users WHERE email_address = :email LIMIT 1";
         $user = $this->select($sql, [':email' => $email]);
 
         if (empty($user)) { return false; }
@@ -122,7 +124,7 @@ class Accounts extends Database {
         $otp_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         $expiry = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
-        $update_sql = "UPDATE Users SET reset_token = :code, reset_token_expiry = :expiry WHERE user_id = :id";
+        $update_sql = "UPDATE users SET reset_token = :code, reset_token_expiry = :expiry WHERE user_id = :id";
         $this->execute($update_sql, [ ':code' => $otp_code, ':expiry' => $expiry, ':id' => $user_data['user_id'] ]);
 
         try {
@@ -135,7 +137,7 @@ class Accounts extends Database {
     }
 
     public function validateResetToken($token) {
-        $sql = "SELECT user_id FROM Users WHERE reset_token = :token AND reset_token_expiry > NOW() LIMIT 1";
+        $sql = "SELECT user_id FROM users WHERE reset_token = :token AND reset_token_expiry > NOW() LIMIT 1";
         $result = $this->select($sql, [':token' => $token]);
         return !empty($result) ? $result[0]['user_id'] : false;
     }
@@ -145,10 +147,11 @@ class Accounts extends Database {
         if (!$user_id) return false;
 
         $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-        $sql = "UPDATE Users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :id";
+        $sql = "UPDATE users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :id";
         $stmt = $this->execute($sql, [':hash' => $new_hash, ':id' => $user_id]);
 
         if ($stmt->rowCount() > 0) {
+            // Check if method exists in parent before calling, just to be safe
             if(method_exists($this, 'createNotification')) {
                  $this->createNotification($user_id, "Security Alert: Your password was successfully changed.");
             }
@@ -158,12 +161,12 @@ class Accounts extends Database {
     }
 
     public function resetPasswordWithCode($email, $code, $new_password) {
-        $sql = "SELECT user_id, first_name FROM Users WHERE email_address = :email AND reset_token = :code AND reset_token_expiry > NOW() LIMIT 1";
+        $sql = "SELECT user_id, first_name FROM users WHERE email_address = :email AND reset_token = :code AND reset_token_expiry > NOW() LIMIT 1";
         $user = $this->select($sql, [':email' => $email, ':code' => $code]);
         if (empty($user)) return false;
 
         $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-        $update_sql = "UPDATE Users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :id";
+        $update_sql = "UPDATE users SET password_hash = :hash, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = :id";
         $stmt = $this->execute($update_sql, [':hash' => $new_hash, ':id' => $user[0]['user_id']]);
         return $stmt->rowCount() > 0;
     }

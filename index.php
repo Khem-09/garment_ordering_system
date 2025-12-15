@@ -29,8 +29,8 @@
                 <span>WMSU Garments</span>
             </a>
             <div class="auth-buttons">
-                <a href="login.php" class="btn-outline-white">Log In</a>
-                <a href="signup.php" class="btn-solid-white">Sign Up</a>
+                <a href="../login.php" class="btn-outline-white">Log In</a>
+                <a href="../signup.php" class="btn-solid-white">Sign Up</a>
             </div>
         </div>
     </header>

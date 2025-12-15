@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     // Handle Delete Garment
     if ($action == 'delete') {
         $del_garment_id = intval($_POST['garment_id']);
-        $sql = "UPDATE Garment SET is_deleted = 1 WHERE garment_id = :id";
+        $sql = "UPDATE garment SET is_deleted = 1 WHERE garment_id = :id";
         try {
             $stmt = $db->conn->prepare($sql);
             $stmt->execute([':id' => $del_garment_id]);
